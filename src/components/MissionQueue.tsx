@@ -21,6 +21,7 @@ const COLUMNS: { id: TaskStatus; label: string; color: string }[] = [
   { id: 'in_progress', label: 'In Progress', color: 'border-t-mc-accent' },
   { id: 'testing', label: 'Testing', color: 'border-t-mc-accent-cyan' },
   { id: 'review', label: 'Review', color: 'border-t-mc-accent-purple' },
+  { id: 'verification', label: 'Verification', color: 'border-t-orange-500' },
   { id: 'done', label: 'Done', color: 'border-t-mc-accent-green' },
 ];
 
@@ -48,7 +49,7 @@ export function MissionQueue({ workspaceId, mobileMode = false, isPortrait = tru
 
       if (res.ok) {
         addEvent({
-          id: crypto.randomUUID(),
+          id: task.id + '-' + Date.now(),
           type: targetStatus === 'done' ? 'task_completed' : 'task_status_changed',
           task_id: task.id,
           message: `Task "${task.title}" moved to ${targetStatus}`,
@@ -255,6 +256,8 @@ function TaskCard({ task, onDragStart, onClick, onMoveStatus, isDragging, mobile
   };
 
   const isPlanning = task.status === 'planning';
+  const isAssigned = task.status === 'assigned';
+  const dispatchError = task.planning_dispatch_error;
 
   return (
     <div
@@ -278,6 +281,41 @@ function TaskCard({ task, onDragStart, onClick, onMoveStatus, isDragging, mobile
           <div className={`flex items-center gap-2 ${portraitMode ? 'mb-3 py-2 px-3' : 'mb-2 py-1.5 px-2.5'} bg-purple-500/10 rounded-md border border-purple-500/20`}>
             <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse flex-shrink-0" />
             <span className="text-xs text-purple-400 font-medium">Continue planning</span>
+          </div>
+        )}
+
+        {isAssigned && dispatchError && (
+          <div className={`flex items-start gap-2 ${portraitMode ? 'mb-3 py-2 px-3' : 'mb-2 py-1.5 px-2.5'} bg-red-500/10 rounded-md border border-red-500/30`}>
+            <div className="w-2 h-2 bg-red-400 rounded-full mt-1 flex-shrink-0" />
+            <span className="text-xs text-red-300">Assigned, but blocked: {dispatchError}</span>
+          </div>
+        )}
+
+        {isAssigned && !dispatchError && (
+          <div className={`flex items-center gap-2 ${portraitMode ? 'mb-3 py-2 px-3' : 'mb-2 py-1.5 px-2.5'} bg-yellow-500/10 rounded-md border border-yellow-500/30`}>
+            <div className="w-2 h-2 bg-yellow-400 rounded-full flex-shrink-0" />
+            <span className="text-xs text-yellow-200">Assigned and validating — auto-start will move this to In Progress.</span>
+          </div>
+        )}
+
+        {task.status === 'inbox' && !task.assigned_agent_id && (
+          <div className={`flex items-center gap-2 ${portraitMode ? 'mb-3 py-2 px-3' : 'mb-2 py-1.5 px-2.5'} bg-amber-500/10 rounded-md border border-amber-500/30`}>
+            <div className="w-2 h-2 bg-amber-400 rounded-full flex-shrink-0" />
+            <span className="text-xs text-amber-200">Needs agent — assign to start</span>
+          </div>
+        )}
+
+        {['testing', 'verification'].includes(task.status) && dispatchError && (
+          <div className={`flex items-start gap-2 ${portraitMode ? 'mb-3 py-2 px-3' : 'mb-2 py-1.5 px-2.5'} bg-red-500/10 rounded-md border border-red-500/30`}>
+            <div className="w-2 h-2 bg-red-400 rounded-full mt-1 flex-shrink-0" />
+            <span className="text-xs text-red-300">{dispatchError}</span>
+          </div>
+        )}
+
+        {task.status === 'review' && !dispatchError && (
+          <div className={`flex items-center gap-2 ${portraitMode ? 'mb-3 py-2 px-3' : 'mb-2 py-1.5 px-2.5'} bg-cyan-500/10 rounded-md border border-cyan-500/30`}>
+            <div className="w-2 h-2 bg-cyan-400 rounded-full flex-shrink-0" />
+            <span className="text-xs text-cyan-200">In queue — waiting for verification</span>
           </div>
         )}
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { bootstrapCoreAgents, cloneWorkflowTemplates } from '@/lib/bootstrap-agents';
 import type { Workspace, WorkspaceStats, TaskStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
           in_progress: 0,
           testing: 0,
           review: 0,
+          verification: 0,
           done: 0,
           total: 0
         };
@@ -99,6 +101,10 @@ export async function POST(request: NextRequest) {
       INSERT INTO workspaces (id, name, slug, description, icon)
       VALUES (?, ?, ?, ?, ?)
     `).run(id, name.trim(), slug, description || null, icon || '📁');
+
+    // Clone workflow templates and bootstrap core agents for the new workspace
+    cloneWorkflowTemplates(db, id);
+    bootstrapCoreAgents(id);
 
     const workspace = db.prepare('SELECT * FROM workspaces WHERE id = ?').get(id);
     return NextResponse.json(workspace, { status: 201 });

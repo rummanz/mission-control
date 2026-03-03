@@ -2,12 +2,14 @@ import { z } from 'zod';
 
 // Task status and priority enums from types
 const TaskStatus = z.enum([
+  'pending_dispatch',
   'planning',
   'inbox',
   'assigned',
   'in_progress',
   'testing',
   'review',
+  'verification',
   'done'
 ]);
 
@@ -42,6 +44,7 @@ export const UpdateTaskSchema = z.object({
   status: TaskStatus.optional(),
   priority: TaskPriority.optional(),
   assigned_agent_id: z.string().uuid().optional().nullable(),
+  workflow_template_id: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
   updated_by_agent_id: z.string().uuid().optional(),
 });
