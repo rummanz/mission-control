@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Trash2 } from 'lucide-react';
 import { useMissionControl } from '@/lib/store';
+import { apiUrl } from '@/lib/api';
 import type { Agent, AgentStatus } from '@/lib/types';
 
 interface AgentModalProps {
@@ -39,7 +40,7 @@ export function AgentModal({ agent, onClose, workspaceId, onAgentCreated }: Agen
   useEffect(() => {
     const loadModels = async () => {
       try {
-        const res = await fetch('/api/openclaw/models');
+        const res = await fetch(apiUrl('/api/openclaw/models'));
         if (res.ok) {
           const data = await res.json();
           setAvailableModels(data.availableModels || []);
@@ -63,7 +64,7 @@ export function AgentModal({ agent, onClose, workspaceId, onAgentCreated }: Agen
     setIsSubmitting(true);
 
     try {
-      const url = agent ? `/api/agents/${agent.id}` : '/api/agents';
+      const url = agent ? apiUrl(`/api/agents/${agent.id}`) : apiUrl('/api/agents');
       const method = agent ? 'PATCH' : 'POST';
 
       const res = await fetch(url, {
@@ -99,7 +100,7 @@ export function AgentModal({ agent, onClose, workspaceId, onAgentCreated }: Agen
     if (!agent || !confirm(`Delete ${agent.name}?`)) return;
 
     try {
-      const res = await fetch(`/api/agents/${agent.id}`, { method: 'DELETE' });
+      const res = await fetch(apiUrl(`/api/agents/${agent.id}`), { method: 'DELETE' });
       if (res.ok) {
         // Remove from store
         useMissionControl.setState((state) => ({

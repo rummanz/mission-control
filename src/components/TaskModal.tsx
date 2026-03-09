@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { X, Save, Trash2, Activity, Package, Bot, ClipboardList, Plus, Users } from 'lucide-react';
 import { useMissionControl } from '@/lib/store';
+import { apiUrl } from '@/lib/api';
 import { triggerAutoDispatch, shouldTriggerAutoDispatch } from '@/lib/auto-dispatch';
 import { ActivityLog } from './ActivityLog';
 import { DeliverablesList } from './DeliverablesList';
@@ -64,7 +65,7 @@ export function TaskModal({ task, onClose, workspaceId }: TaskModalProps) {
     setSaveError(null);
 
     try {
-      const url = task ? `/api/tasks/${task.id}` : '/api/tasks';
+      const url = task ? apiUrl(`/api/tasks/${task.id}`) : apiUrl('/api/tasks');
       const method = task ? 'PATCH' : 'POST';
       const resolvedStatus = resolveStatus();
 
@@ -123,7 +124,7 @@ export function TaskModal({ task, onClose, workspaceId }: TaskModalProps) {
       if (usePlanningMode) {
         // Start planning session (fire-and-forget), then close modal.
         // User reopens the task from the board to see the planning tab.
-        fetch(`/api/tasks/${savedTask.id}/planning`, { method: 'POST' })
+        fetch(apiUrl(`/api/tasks/${savedTask.id}/planning`), { method: 'POST' })
           .catch((error) => console.error('Failed to start planning:', error));
         onClose();
         return;
@@ -166,7 +167,7 @@ export function TaskModal({ task, onClose, workspaceId }: TaskModalProps) {
     if (!task || !confirm(`Delete "${task.title}"?`)) return;
 
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, { method: 'DELETE' });
+      const res = await fetch(apiUrl(`/api/tasks/${task.id}`), { method: 'DELETE' });
       if (res.ok) {
         useMissionControl.setState((state) => ({
           tasks: state.tasks.filter((t) => t.id !== task.id),

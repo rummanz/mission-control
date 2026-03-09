@@ -117,12 +117,14 @@ export function expandPath(path: string): string {
  * Used by orchestration module and other server-side modules
  */
 export function getMissionControlUrl(): string {
-  // Server-side: use env var or auto-detect
+  // Server-side: use env var or auto-detect, and append basePath
   if (typeof window === 'undefined') {
-    return process.env.MISSION_CONTROL_URL || 'http://localhost:4000';
+    const base = (process.env.MISSION_CONTROL_URL || 'http://localhost:4000').replace(/\/$/, '');
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    return `${base}${basePath}`;
   }
 
-  // Client-side: use config
+  // Client-side: use config (origin already includes basePath context)
   return getConfig().missionControlUrl;
 }
 

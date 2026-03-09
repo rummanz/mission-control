@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Zap, Settings, ChevronLeft, LayoutGrid } from 'lucide-react';
 import { useMissionControl } from '@/lib/store';
+import { apiUrl } from '@/lib/api';
 import { format } from 'date-fns';
 import type { Workspace } from '@/lib/types';
 
@@ -27,7 +28,7 @@ export function Header({ workspace, isPortrait = true }: HeaderProps) {
   useEffect(() => {
     const loadSubAgentCount = async () => {
       try {
-        const res = await fetch('/api/openclaw/sessions?session_type=subagent&status=active');
+        const res = await fetch(apiUrl('/api/openclaw/sessions?session_type=subagent&status=active'));
         if (res.ok) {
           const sessions = await res.json();
           setActiveSubAgents(sessions.length);

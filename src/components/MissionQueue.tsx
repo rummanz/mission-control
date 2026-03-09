@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus, ChevronRight, GripVertical, ArrowRightLeft } from 'lucide-react';
 import { useMissionControl } from '@/lib/store';
+import { apiUrl } from '@/lib/api';
 import { triggerAutoDispatch, shouldTriggerAutoDispatch } from '@/lib/auto-dispatch';
 import type { Task, TaskStatus } from '@/lib/types';
 import { TaskModal } from './TaskModal';
@@ -41,7 +42,7 @@ export function MissionQueue({ workspaceId, mobileMode = false, isPortrait = tru
     updateTaskStatus(task.id, targetStatus);
 
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
+      const res = await fetch(apiUrl(`/api/tasks/${task.id}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: targetStatus }),

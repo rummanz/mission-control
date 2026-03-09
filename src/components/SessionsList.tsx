@@ -7,6 +7,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Bot, CheckCircle, Circle, XCircle, Trash2, Check } from 'lucide-react';
+import { apiUrl } from '@/lib/api';
 
 interface SessionWithAgent {
   id: string;
@@ -33,7 +34,7 @@ export function SessionsList({ taskId }: SessionsListProps) {
 
   const loadSessions = useCallback(async () => {
     try {
-      const res = await fetch(`/api/tasks/${taskId}/subagent`);
+      const res = await fetch(apiUrl(`/api/tasks/${taskId}/subagent`));
       if (res.ok) {
         const data = await res.json();
         setSessions(data);
@@ -92,8 +93,7 @@ export function SessionsList({ taskId }: SessionsListProps) {
 
   const handleMarkComplete = async (sessionId: string) => {
     try {
-      const res = await fetch(`/api/openclaw/sessions/${sessionId}`, {
-        method: 'PATCH',
+      const res = await fetch(apiUrl(`/api/openclaw/sessions/${sessionId}`), {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'completed',
@@ -111,7 +111,7 @@ export function SessionsList({ taskId }: SessionsListProps) {
   const handleDelete = async (sessionId: string) => {
     if (!confirm('Delete this sub-agent session?')) return;
     try {
-      const res = await fetch(`/api/openclaw/sessions/${sessionId}`, {
+      const res = await fetch(apiUrl(`/api/openclaw/sessions/${sessionId}`), {
         method: 'DELETE',
       });
       if (res.ok) {

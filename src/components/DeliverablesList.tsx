@@ -8,6 +8,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { FileText, Link as LinkIcon, Package, ExternalLink, Eye } from 'lucide-react';
 import { debug } from '@/lib/debug';
+import { apiUrl } from '@/lib/api';
 import type { TaskDeliverable } from '@/lib/types';
 
 interface DeliverablesListProps {
@@ -20,7 +21,7 @@ export function DeliverablesList({ taskId }: DeliverablesListProps) {
 
   const loadDeliverables = useCallback(async () => {
     try {
-      const res = await fetch(`/api/tasks/${taskId}/deliverables`);
+      const res = await fetch(apiUrl(`/api/tasks/${taskId}/deliverables`));
       if (res.ok) {
         const data = await res.json();
         setDeliverables(data);
@@ -60,7 +61,7 @@ export function DeliverablesList({ taskId }: DeliverablesListProps) {
     if (deliverable.path) {
       try {
         debug.file('Opening file in Finder', { path: deliverable.path });
-        const res = await fetch('/api/files/reveal', {
+        const res = await fetch(apiUrl('/api/files/reveal'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filePath: deliverable.path }),
@@ -97,7 +98,7 @@ export function DeliverablesList({ taskId }: DeliverablesListProps) {
   const handlePreview = (deliverable: TaskDeliverable) => {
     if (deliverable.path) {
       debug.file('Opening preview', { path: deliverable.path });
-      window.open(`/api/files/preview?path=${encodeURIComponent(deliverable.path)}`, '_blank');
+      window.open(apiUrl(`/api/files/preview?path=${encodeURIComponent(deliverable.path)}`), '_blank');
     }
   };
 

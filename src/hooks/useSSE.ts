@@ -8,6 +8,7 @@
 import { useEffect, useRef } from 'react';
 import { useMissionControl } from '@/lib/store';
 import { debug } from '@/lib/debug';
+import { apiUrl } from '@/lib/api';
 import type { SSEEvent, Task } from '@/lib/types';
 
 export function useSSE() {
@@ -40,7 +41,7 @@ export function useSSE() {
       isConnecting = true;
       debug.sse('Connecting to event stream...');
 
-      const eventSource = new EventSource('/api/events/stream');
+      const eventSource = new EventSource(apiUrl('/api/events/stream'));
       eventSourceRef.current = eventSource;
 
       eventSource.onopen = () => {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { AgentActivityDashboard } from '@/components/AgentActivityDashboard';
+import { apiUrl } from '@/lib/api';
 import type { Workspace } from '@/lib/types';
 
 export default function WorkspaceActivityPage() {
@@ -13,7 +14,7 @@ export default function WorkspaceActivityPage() {
   useEffect(() => {
     async function loadWorkspace() {
       try {
-        const res = await fetch(`/api/workspaces/${slug}`);
+        const res = await fetch(apiUrl(`/api/workspaces/${slug}`));
         if (res.ok) {
           setWorkspace(await res.json());
         }
