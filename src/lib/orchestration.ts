@@ -15,6 +15,15 @@ import { getMissionControlUrl } from './config';
 
 const MISSION_CONTROL_URL = getMissionControlUrl();
 
+/** Build headers with auth token when MC_API_TOKEN is set */
+function apiHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (process.env.MC_API_TOKEN) {
+    headers['Authorization'] = `Bearer ${process.env.MC_API_TOKEN}`;
+  }
+  return headers;
+}
+
 export interface LogActivityParams {
   taskId: string;
   activityType: 'spawned' | 'updated' | 'completed' | 'file_created' | 'status_changed';
@@ -45,7 +54,7 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
   try {
     const response = await fetch(`${MISSION_CONTROL_URL}/api/tasks/${params.taskId}/activities`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: apiHeaders(),
       body: JSON.stringify({
         activity_type: params.activityType,
         message: params.message,
@@ -73,7 +82,7 @@ export async function logDeliverable(params: LogDeliverableParams): Promise<void
   try {
     const response = await fetch(`${MISSION_CONTROL_URL}/api/tasks/${params.taskId}/deliverables`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: apiHeaders(),
       body: JSON.stringify({
         deliverable_type: params.deliverableType,
         title: params.title,
@@ -101,7 +110,7 @@ export async function registerSubAgentSession(params: RegisterSubAgentParams): P
   try {
     const response = await fetch(`${MISSION_CONTROL_URL}/api/tasks/${params.taskId}/subagent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: apiHeaders(),
       body: JSON.stringify({
         openclaw_session_id: params.sessionId,
         agent_name: params.agentName,
@@ -127,7 +136,7 @@ export async function completeSubAgentSession(sessionId: string, summary?: strin
   try {
     const response = await fetch(`${MISSION_CONTROL_URL}/api/openclaw/sessions/${sessionId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: apiHeaders(),
       body: JSON.stringify({
         status: 'completed',
         ended_at: new Date().toISOString(),
@@ -150,7 +159,7 @@ export async function completeSubAgentSession(sessionId: string, summary?: strin
  */
 export async function getDeliverables(taskId: string): Promise<any[]> {
   try {
-    const response = await fetch(`${MISSION_CONTROL_URL}/api/tasks/${taskId}/deliverables`);
+    const response = await fetch(`${MISSION_CONTROL_URL}/api/tasks/${taskId}/deliverables`, { headers: apiHeaders() });
     if (!response.ok) {
       throw new Error(`Failed to fetch deliverables: ${response.statusText}`);
     }

@@ -48,6 +48,10 @@ export async function notifyLearner(
   );
 
   const missionControlUrl = getMissionControlUrl();
+  const mcApiToken = process.env.MC_API_TOKEN;
+  const authLine = mcApiToken
+    ? `\nHeaders: {"Authorization": "Bearer ${mcApiToken}", "Content-Type": "application/json"}\n`
+    : '';
 
   const learningMessage = `📚 **STAGE TRANSITION — LEARNING CAPTURE**
 
@@ -60,7 +64,7 @@ ${event.context ? `**Context:** ${event.context}` : ''}
 **Your job:** Analyze this transition and capture any lessons learned.
 When done, call this API to save your findings:
 
-POST ${missionControlUrl}/api/workspaces/${task.workspace_id}/knowledge
+POST ${missionControlUrl}/api/workspaces/${task.workspace_id}/knowledge${authLine}
 Body: {
   "task_id": "${taskId}",
   "category": "failure" | "fix" | "pattern" | "checklist",

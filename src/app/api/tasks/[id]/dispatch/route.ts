@@ -223,10 +223,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const isVerifier = currentStage?.role === 'verifier' || currentStage?.role === 'reviewer';
     const nextStatus = nextStage?.status || 'review';
     const failEndpoint = `POST ${missionControlUrl}/api/tasks/${task.id}/fail`;
-
+    const mcApiToken = process.env.MC_API_TOKEN;
+    const authHeaderInstruction = mcApiToken
+      ? `\n**AUTHENTICATION:** All API calls MUST include this header:\n   Authorization: Bearer ${mcApiToken}\n`
+      : '';
     let completionInstructions: string;
     if (isBuilder) {
-      completionInstructions = `**IMPORTANT:** After completing work, you MUST call these APIs:
+      completionInstructions = `**IMPORTANT:** After completing work, you MUST call these APIs:\n${authHeaderInstruction}
 1. Log activity: POST ${missionControlUrl}/api/tasks/${task.id}/activities
    Body: {"activity_type": "completed", "message": "Description of what was done"}
 2. Register deliverable: POST ${missionControlUrl}/api/tasks/${task.id}/deliverables
@@ -237,7 +240,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 When complete, reply with:
 \`TASK_COMPLETE: [brief summary of what you did]\``;
     } else if (isTester) {
-      completionInstructions = `**YOUR ROLE: TESTER** — Test the deliverables for this task.
+            completionInstructions = `**YOUR ROLE: TESTER** — Test the deliverables for this task.\n${authHeaderInstruction}
 
 Review the output directory for deliverables and run any applicable tests.
 
@@ -253,7 +256,7 @@ Review the output directory for deliverables and run any applicable tests.
 
 Reply with: \`TEST_PASS: [summary]\` or \`TEST_FAIL: [what failed]\``;
     } else if (isVerifier) {
-      completionInstructions = `**YOUR ROLE: VERIFIER** — Verify that all work meets quality standards.
+            completionInstructions = `**YOUR ROLE: VERIFIER** — Verify that all work meets quality standards.\n${authHeaderInstruction}
 
 Review deliverables, test results, and task requirements.
 
@@ -270,7 +273,7 @@ Review deliverables, test results, and task requirements.
 Reply with: \`VERIFY_PASS: [summary]\` or \`VERIFY_FAIL: [what failed]\``;
     } else {
       // Fallback for unknown roles
-      completionInstructions = `**IMPORTANT:** After completing work:
+            completionInstructions = `**IMPORTANT:** After completing work:\n${authHeaderInstruction}
 1. Update status: PATCH ${missionControlUrl}/api/tasks/${task.id}
    Body: {"status": "${nextStatus}"}`;
     }
