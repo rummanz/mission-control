@@ -1,15 +1,22 @@
 /**
  * DeliverablesList Component
- * Displays deliverables (files, URLs, artifacts) for a task
+ * Displays deliverables (files, URLs, artifacts) for a task.
+ *
+ * Behaviour depends on NEXT_PUBLIC_DEPLOY_MODE:
+ *   "local"  (default) — file links open in Finder / Explorer (dev laptop)
+ *   "remote"           — file links trigger browser downloads via /api/files/download
  */
 
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { FileText, Link as LinkIcon, Package, ExternalLink, Eye } from 'lucide-react';
+import { FileText, Link as LinkIcon, Package, ExternalLink, Eye, Download } from 'lucide-react';
 import { debug } from '@/lib/debug';
 import { apiUrl } from '@/lib/api';
 import type { TaskDeliverable } from '@/lib/types';
+
+const DEPLOY_MODE = process.env.NEXT_PUBLIC_DEPLOY_MODE || 'local';
+const isRemote = DEPLOY_MODE === 'remote';
 
 interface DeliverablesListProps {
   taskId: string;
@@ -57,47 +64,77 @@ export function DeliverablesList({ taskId }: DeliverablesListProps) {
       return;
     }
 
-    // Files - try to open in Finder
+    // Remote mode: trigger browser download
+    if (isRemote && deliverable.path) {
+      handleDownload(deliverable);
+      return;
+    }
+
+    // Local mode: reveal in Finder / Explorer
     if (deliverable.path) {
+      await handleReveal(deliverable);
+    }
+  };
+
+  const handleReveal = async (deliverable: TaskDeliverable) => {
+    if (!deliverable.path) return;
+    try {
+      debug.file('Opening file in Finder', { path: deliverable.path });
+      const res = await fetch(apiUrl('/api/files/reveal'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath: deliverable.path }),
+      });
+
+      if (res.ok) {
+        debug.file('Opened in Finder successfully');
+        return;
+      }
+
+      const error = await res.json();
+      debug.file('Failed to open', error);
+
+      if (res.status === 404) {
+        alert(`File not found:\n${deliverable.path}\n\nThe file may have been moved or deleted.`);
+      } else if (res.status === 403) {
+        alert(`Cannot open this location:\n${deliverable.path}\n\nPath is outside allowed directories.`);
+      } else {
+        throw new Error(error.error || 'Unknown error');
+      }
+    } catch (error) {
+      console.error('Failed to open file:', error);
+      // Fallback: copy path to clipboard
       try {
-        debug.file('Opening file in Finder', { path: deliverable.path });
-        const res = await fetch(apiUrl('/api/files/reveal'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filePath: deliverable.path }),
-        });
-
-        if (res.ok) {
-          debug.file('Opened in Finder successfully');
-          return;
-        }
-
-        const error = await res.json();
-        debug.file('Failed to open', error);
-
-        if (res.status === 404) {
-          alert(`File not found:\n${deliverable.path}\n\nThe file may have been moved or deleted.`);
-        } else if (res.status === 403) {
-          alert(`Cannot open this location:\n${deliverable.path}\n\nPath is outside allowed directories.`);
-        } else {
-          throw new Error(error.error || 'Unknown error');
-        }
-      } catch (error) {
-        console.error('Failed to open file:', error);
-        // Fallback: copy path to clipboard
-        try {
-          await navigator.clipboard.writeText(deliverable.path);
-          alert(`Could not open Finder. Path copied to clipboard:\n${deliverable.path}`);
-        } catch {
-          alert(`File path:\n${deliverable.path}`);
-        }
+        await navigator.clipboard.writeText(deliverable.path);
+        alert(`Could not open Finder. Path copied to clipboard:\n${deliverable.path}`);
+      } catch {
+        alert(`File path:\n${deliverable.path}`);
       }
     }
   };
 
+  const handleDownload = (deliverable: TaskDeliverable) => {
+    if (!deliverable.path) return;
+    const url = apiUrl(`/api/files/download?path=${encodeURIComponent(deliverable.path)}&raw=true`);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = deliverable.title || deliverable.path.split('/').pop() || 'file';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const handlePreview = (deliverable: TaskDeliverable) => {
-    if (deliverable.path) {
-      debug.file('Opening preview', { path: deliverable.path });
+    if (!deliverable.path) return;
+    debug.file('Opening preview', { path: deliverable.path });
+
+    if (isRemote) {
+      // Remote mode: use download endpoint with inline disposition
+      const url = apiUrl(
+        `/api/files/download?path=${encodeURIComponent(deliverable.path)}&raw=true&inline=true`,
+      );
+      window.open(url, '_blank');
+    } else {
       window.open(apiUrl(`/api/files/preview?path=${encodeURIComponent(deliverable.path)}`), '_blank');
     }
   };
@@ -169,14 +206,24 @@ export function DeliverablesList({ taskId }: DeliverablesListProps) {
                     <Eye className="w-4 h-4" />
                   </button>
                 )}
-                {/* Open/Reveal button */}
+                {/* Open/Reveal/Download button */}
                 {deliverable.path && (
                   <button
                     onClick={() => handleOpen(deliverable)}
                     className="flex-shrink-0 p-1.5 hover:bg-mc-bg-tertiary rounded text-mc-accent"
-                    title={deliverable.deliverable_type === 'url' ? 'Open URL' : 'Reveal in Finder'}
+                    title={
+                      deliverable.deliverable_type === 'url'
+                        ? 'Open URL'
+                        : isRemote
+                          ? 'Download file'
+                          : 'Reveal in Finder'
+                    }
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    {deliverable.deliverable_type === 'url' || !isRemote ? (
+                      <ExternalLink className="w-4 h-4" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
                   </button>
                 )}
               </div>
@@ -200,6 +247,14 @@ export function DeliverablesList({ taskId }: DeliverablesListProps) {
                 >
                   {deliverable.path}
                 </a>
+              ) : isRemote ? (
+                <button
+                  onClick={() => handleDownload(deliverable)}
+                  className="mt-2 p-2 bg-mc-bg-tertiary rounded text-xs text-mc-accent hover:text-mc-accent/80 font-mono break-all flex items-center gap-2 w-full text-left hover:bg-mc-bg-tertiary/80 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 flex-shrink-0" />
+                  {deliverable.path}
+                </button>
               ) : (
                 <div className="mt-2 p-2 bg-mc-bg-tertiary rounded text-xs text-mc-text-secondary font-mono break-all">
                   {deliverable.path}

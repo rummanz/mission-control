@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     try {
       resolvedPath = realpathSync(targetPath);
       const resolvedBase = realpathSync(PROJECTS_BASE);
-      
+
       if (!resolvedPath.startsWith(resolvedBase + path.sep) && resolvedPath !== resolvedBase) {
         console.warn(`[SECURITY] Path traversal attempt blocked: ${targetPath} -> ${resolvedPath}`);
         return NextResponse.json(
@@ -119,9 +119,9 @@ export async function GET(request: NextRequest) {
     const ext = path.extname(targetPath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
     const isText = contentType.startsWith('text/') ||
-                   contentType === 'application/json' ||
-                   contentType === 'application/javascript' ||
-                   contentType === 'application/xml';
+      contentType === 'application/json' ||
+      contentType === 'application/javascript' ||
+      contentType === 'application/xml';
 
     // Read file
     const content = readFileSync(targetPath, isText ? 'utf-8' : undefined);
@@ -130,11 +130,17 @@ export async function GET(request: NextRequest) {
 
     // Return raw content or JSON wrapper
     if (raw) {
+      const fileName = path.basename(targetPath);
+      const disposition = searchParams.get('inline') === 'true'
+        ? `inline; filename="${fileName}"`
+        : `attachment; filename="${fileName}"`;
+
       return new NextResponse(content, {
         status: 200,
         headers: {
           'Content-Type': contentType,
           'Content-Length': String(stats.size),
+          'Content-Disposition': disposition,
         },
       });
     }
